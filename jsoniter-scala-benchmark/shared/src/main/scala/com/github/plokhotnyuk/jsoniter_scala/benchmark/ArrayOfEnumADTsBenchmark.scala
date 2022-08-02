@@ -14,7 +14,7 @@ case object Diamonds extends SuitADT
 case object Clubs extends SuitADT
 
 abstract class ArrayOfEnumADTsBenchmark extends CommonParams {
-  @Param(Array("1", "10", "100", "1000", "10000", "100000", "1000000"))
+  @Param(Array("128"))
   var size: Int = 1000
   var obj: Array[SuitADT] = _
   var jsonString: String = _

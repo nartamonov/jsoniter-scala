@@ -267,6 +267,15 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
 
 lazy val `jsoniter-scala-benchmarkJVM` = `jsoniter-scala-benchmark`.jvm
   .enablePlugins(JmhPlugin)
+  .settings(
+    Compile / mainClass := Some("com.github.plokhotnyuk.jsoniter_scala.benchmark.Main"),
+    assembly / mainClass := Some("com.github.plokhotnyuk.jsoniter_scala.benchmark.Main"),
+    assembly / assemblyMergeStrategy := {
+      case "META-INF/MANIFEST.MF" => MergeStrategy.discard
+      case "module-info.class" => MergeStrategy.discard
+      case _ => MergeStrategy.first
+    }
+  )
 
 lazy val `jsoniter-scala-benchmarkJS` = `jsoniter-scala-benchmark`.js
   .enablePlugins(JSDependenciesPlugin)

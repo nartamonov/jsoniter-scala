@@ -1,6 +1,9 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import org.openjdk.jmh.annotations.Benchmark
+import org.openjdk.jmh.runner.Runner
+import org.openjdk.jmh.runner.RunnerException
+import org.openjdk.jmh.runner.options.OptionsBuilder
 
 class ArrayOfEnumADTsReading extends ArrayOfEnumADTsBenchmark {
   @Benchmark
@@ -117,5 +120,13 @@ class ArrayOfEnumADTsReading extends ArrayOfEnumADTsBenchmark {
     import java.nio.charset.StandardCharsets.UTF_8
 
     new String(jsonBytes, UTF_8).fromJson[Array[SuitADT]].fold(sys.error, identity)
+  }
+}
+
+object Main {
+  @throws[RunnerException]
+  def main(args: Array[String]): Unit = {
+    val opt = new OptionsBuilder().include("ArrayOfEnumADTsReading.dslJsonScala").build
+    new Runner(opt).run
   }
 }
