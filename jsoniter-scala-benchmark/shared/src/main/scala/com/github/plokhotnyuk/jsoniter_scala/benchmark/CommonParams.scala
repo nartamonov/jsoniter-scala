@@ -4,8 +4,8 @@ import java.util.concurrent.TimeUnit
 import org.openjdk.jmh.annotations._
 
 @State(Scope.Thread)
-@Warmup(iterations = 5, time = 1, timeUnit = TimeUnit.SECONDS)
-@Measurement(iterations = 5, time = 1, timeUnit = TimeUnit.SECONDS)
+@Warmup(iterations = 50, time = 100, timeUnit = TimeUnit.MILLISECONDS)
+@Measurement(iterations = 50, time = 100, timeUnit = TimeUnit.MILLISECONDS)
 @Fork(value = 1, jvmArgs = Array(
   "-server",
   "-Xms2g",
