@@ -126,7 +126,7 @@ class ArrayOfEnumADTsReading extends ArrayOfEnumADTsBenchmark {
 object Main {
   @throws[RunnerException]
   def main(args: Array[String]): Unit = {
-    val opt = new OptionsBuilder().include("ArrayOfEnumADTsReading.dslJsonScala").build
+    val opt = new OptionsBuilder().include("ArrayOfEnumADTsReading.dslJsonScala").jvmArgs(args:_*).build
     new Runner(opt).run
   }
 }
