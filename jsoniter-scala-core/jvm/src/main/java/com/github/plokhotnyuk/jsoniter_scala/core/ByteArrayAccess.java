@@ -34,6 +34,10 @@ class ByteArrayAccess { // FIXME: Use Java wrapper as w/a for missing support of
         VH_SHORT.set(buf, pos, value);
     }
 
+    static short getShort(byte[] buf, int pos) {
+        return (short) VH_SHORT.get(buf, pos);
+    }
+
     static int getIntReversed(byte[] buf, int pos) {
         return (int) VH_INT_REVERSED.get(buf, pos);
     }

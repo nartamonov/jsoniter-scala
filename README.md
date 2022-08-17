@@ -193,6 +193,7 @@ List of options that change parsing and serialization in runtime:
 - Preferred size of internal input buffers when parsing from `java.io.InputStream` or `java.nio.DirectByteBuffer`
 - Preferred size of internal output buffers when serializing to `java.io.OutputStream` or `java.nio.DirectByteBuffer`
 - Preferred size of char buffers when parsing string values
+- Ability to skip one-line and multi-line JavaScript-like comments
 
 For upcoming features and fixes see [Commits](https://github.com/plokhotnyuk/jsoniter-scala/commits/master)
 and [Issues page](https://github.com/plokhotnyuk/jsoniter-scala/issues).

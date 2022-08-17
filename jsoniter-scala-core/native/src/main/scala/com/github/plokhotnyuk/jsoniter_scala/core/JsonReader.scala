@@ -523,9 +523,13 @@ final class JsonReader private[jsoniter_scala](
     else if ((b >= '0' && b <= '9') || b == '-') skipNumber(head)
     else if (b == 'n' || b == 't') skipFixedBytes(3, head)
     else if (b == 'f') skipFixedBytes(4, head)
-    else if (b == '[') skipArray(0, head)
-    else if (b == '{') skipObject(0, head)
-    else decodeError("expected value")
+    else if (b == '[') {
+      if (config.allowComments) skipArrayWithComments(0, head)
+      else skipArray(0, head)
+    } else if (b == '{') {
+      if (config.allowComments) skipObjectWithComments(0, head)
+      else skipObject(0, head)
+    } else decodeError("expected value")
   }
 
   def commaError(): Nothing = decodeError("expected ','")
@@ -695,7 +699,10 @@ final class JsonReader private[jsoniter_scala](
       pos < tail
     }) && {
       val b = buf(pos)
-      b == ' ' || b == '\n' || (b | 0x4) == '\r'
+      b == ' ' || b == '\n' || (b | 0x4) == '\r' || b == '/' && config.allowComments && {
+        pos = skipComment(pos + 1) - 1
+        true
+      }
     }) pos += 1
     head = pos
     pos != tail
@@ -766,6 +773,7 @@ final class JsonReader private[jsoniter_scala](
     if (pos < tail) {
       val b = buf(pos)
       if (b == ' ' || b == '\n' || (b | 0x4) == '\r') nextToken(pos + 1)
+      else if (b == '/' && config.allowComments) nextToken(skipComment(pos + 1))
       else {
         head = pos + 1
         b
@@ -777,7 +785,7 @@ final class JsonReader private[jsoniter_scala](
     if (pos < tail) {
       val b = buf(pos)
       head = pos + 1
-      if (b != t && ((b != ' ' && b != '\n' && (b | 0x4) != '\r') || nextToken(pos + 1) != t)) tokenError(t, head - 1)
+      if (b != t && nextToken(pos) != t) tokenError(t, head - 1)
     } else nextTokenOrError(t, loadMoreOrError(pos))
 
   @tailrec
@@ -785,7 +793,7 @@ final class JsonReader private[jsoniter_scala](
     if (pos < tail) {
       val b = buf(pos)
       head = pos + 1
-      b == t || ((b == ' ' || b == '\n' || (b | 0x4) == '\r') && nextToken(pos + 1) == t)
+      b == t || nextToken(pos) == t
     } else isNextToken(t, loadMoreOrError(pos))
 
   private[this] def isCurrentToken(t: Byte, pos: Int): Boolean = {
@@ -1157,8 +1165,11 @@ final class JsonReader private[jsoniter_scala](
           if (b5 != 'e') booleanError(pos + 4)
           false
         } else parseBoolean(isToken, loadMoreOrError(pos))
-      } else if (isToken && (b1 == ' ' || b1 == '\n' || (b1 | 0x4) == '\r')) parseBoolean(isToken, pos + 1)
-      else booleanError(pos)
+      } else if (isToken) {
+        if (b1 == ' ' || b1 == '\n' || (b1 | 0x4) == '\r') parseBoolean(isToken, pos + 1)
+        else if (b1 == '/' && config.allowComments) parseBoolean(isToken, skipComment(pos + 1))
+        else booleanError(pos)
+      } else booleanError(pos)
     } else parseBoolean(isToken, loadMoreOrError(pos))
 
   private[this] def booleanError(pos: Int): Nothing = decodeError("illegal boolean", pos)
@@ -2703,7 +2714,7 @@ final class JsonReader private[jsoniter_scala](
       b = nextByte(head)
       if (b != '"') {
         if (ns(b & 0xFF) < 0) decodeError("expected '\"' or hex digit")
-        nextByte(head)
+        b = nextByte(head)
         decodeError("expected hex digit")
       }
       bs = new Array[Byte](bLen + 1)
@@ -2978,10 +2989,11 @@ final class JsonReader private[jsoniter_scala](
     if (pos < tail) {
       val b = buf(pos)
       if (b == '"') skipObject(level, skipString(evenBackSlashes = true, pos + 1))
-      else if (b == '{') skipObject(level + 1, pos + 1)
-      else if (b != '}') skipObject(level, pos + 1)
-      else if (level != 0) skipObject(level - 1, pos + 1)
-      else pos + 1
+      else if (b == '}') {
+        if (level == 0) pos + 1
+        else skipObject(level - 1, pos + 1)
+      } else if (b == '{') skipObject(level + 1, pos + 1)
+      else skipObject(level, pos + 1)
     } else skipObject(level, loadMoreOrError(pos))
 
   @tailrec
@@ -2989,11 +3001,63 @@ final class JsonReader private[jsoniter_scala](
     if (pos < tail) {
       val b = buf(pos)
       if (b == '"') skipArray(level, skipString(evenBackSlashes = true, pos + 1))
-      else if (b == '[') skipArray(level + 1, pos + 1)
-      else if (b != ']') skipArray(level, pos + 1)
-      else if (level != 0) skipArray(level - 1, pos + 1)
-      else pos + 1
+      else if (b == ']') {
+        if (level == 0) pos + 1
+        else skipArray(level - 1, pos + 1)
+      } else if (b == '[') skipArray(level + 1, pos + 1)
+      else skipArray(level, pos + 1)
     } else skipArray(level, loadMoreOrError(pos))
+
+  @tailrec
+  private[this] def skipObjectWithComments(level: Int, pos: Int): Int =
+    if (pos < tail) {
+      val b = buf(pos)
+      if (b == '"') skipObjectWithComments(level, skipString(evenBackSlashes = true, pos + 1))
+      else if (b == '}') {
+        if (level == 0) pos + 1
+        else skipObjectWithComments(level - 1, pos + 1)
+      } else if (b == '{') skipObjectWithComments(level + 1, pos + 1)
+      else if (b == '/') skipObjectWithComments(level, skipComment(pos + 1))
+      else skipObjectWithComments(level, pos + 1)
+    } else skipObjectWithComments(level, loadMoreOrError(pos))
+
+  @tailrec
+  private[this] def skipArrayWithComments(level: Int, pos: Int): Int =
+    if (pos < tail) {
+      val b = buf(pos)
+      if (b == '"') skipArrayWithComments(level, skipString(evenBackSlashes = true, pos + 1))
+      else if (b == ']') {
+        if (level == 0) pos + 1
+        else skipArrayWithComments(level - 1, pos + 1)
+      } else if (b == '[') skipArrayWithComments(level + 1, pos + 1)
+      else if (b == '/') skipArrayWithComments(level, skipComment(pos + 1))
+      else skipArrayWithComments(level, pos + 1)
+    } else skipArrayWithComments(level, loadMoreOrError(pos))
+
+  @tailrec
+  private[this] def skipComment(pos: Int): Int =
+    if (pos < tail) {
+      val b = buf(pos)
+      if (b == '/') skipOneLineComment(pos + 1)
+      else if (b == '*') skipMultiLineComment(pos + 1)
+      else tokensError('/', '*', pos)
+    } else skipComment(loadMoreOrError(pos))
+
+  @tailrec
+  private[this] def skipOneLineComment(pos: Int): Int =
+    if (pos < tail) {
+      if (buf(pos) != '\n') skipOneLineComment(pos + 1)
+      else pos + 1
+    } else skipOneLineComment(loadMoreOrError(pos))
+
+  @tailrec
+  private[this] def skipMultiLineComment(pos: Int): Int =
+    if (pos + 1 < tail) {
+      val b1 = buf(pos)
+      val b2 = buf(pos + 1)
+      if (b1 != '*' || b2 != '/') skipMultiLineComment(pos + 1)
+      else pos + 2
+    } else skipMultiLineComment(loadMoreOrError(pos))
 
   @tailrec
   private[this] def skipFixedBytes(n: Int, pos: Int): Int = {
