@@ -8,6 +8,7 @@ import smithy4s.schema.Schema._
 import java.time.Instant
 import java.util.UUID
 import scala.collection.immutable.{ArraySeq, Seq}
+import scala.reflect.ClassTag
 
 object Smithy4sJCodecs {
   def toOptList[A](xs: List[A]): Option[List[A]] =
@@ -17,6 +18,12 @@ object Smithy4sJCodecs {
   def toOpt[A](x: A, default: A): Option[A] =
     if (x == default) None
     else Some(x)
+
+  def arraySeq[A: ClassTag](a: Schema[A]): Schema[ArraySeq[A]] =
+    bijection(indexedSeq(a), (x: IndexedSeq[A]) => x match {
+      case x: ArraySeq[A] => x
+      case _ => ArraySeq.from(x)
+    }, (x: ArraySeq[A]) => x)
 
   val escapingConfig: WriterConfig = WriterConfig.withEscapeUnicode(true)
   val prettyConfig: WriterConfig = WriterConfig.withIndentionStep(2).withPreferredBufSize(32768)
@@ -101,10 +108,7 @@ object Smithy4sJCodecs {
       case x => x.toArray
     }, (x: Array[UUID]) => ArraySeq.unsafeWrapArray(x)))
   implicit val arraySeqOfBooleansJCodec: JCodec[ArraySeq[Boolean]] =
-    JCodec.deriveJCodecFromSchema(bijection(indexedSeq(boolean), (x: IndexedSeq[Boolean]) => x match {
-      case x: ArraySeq[Boolean] => x
-      case x => ArraySeq.from(x)
-    }, (x: ArraySeq[Boolean]) => x))
+    JCodec.deriveJCodecFromSchema(arraySeq(boolean))
   val base64JCodec: JCodec[Array[Byte]] =
     JCodec.deriveJCodecFromSchema(bijection(bytes, (x: ByteArray) => x.array, (x: Array[Byte]) => ByteArray(x)))
   val bigDecimalJCodec: JCodec[BigDecimal] = JCodec.deriveJCodecFromSchema(bigdecimal)
@@ -130,23 +134,23 @@ object Smithy4sJCodecs {
       )(GeoJSON.Point.apply)
     val multiPointSchema: Schema[GeoJSON.MultiPoint] =
       struct(
-        indexedSeq(coordinatesSchema).required[GeoJSON.MultiPoint]("coordinates", _.coordinates),
+        arraySeq(coordinatesSchema).required[GeoJSON.MultiPoint]("coordinates", _.coordinates),
       )(GeoJSON.MultiPoint.apply)
     val lineStringSchema: Schema[GeoJSON.LineString] =
       struct(
-        indexedSeq(coordinatesSchema).required[GeoJSON.LineString]("coordinates", _.coordinates),
+        arraySeq(coordinatesSchema).required[GeoJSON.LineString]("coordinates", _.coordinates),
       )(GeoJSON.LineString.apply)
     val multiLineStringSchema: Schema[GeoJSON.MultiLineString] =
       struct(
-        indexedSeq(indexedSeq(coordinatesSchema)).required[GeoJSON.MultiLineString]("coordinates", _.coordinates),
+        arraySeq(arraySeq(coordinatesSchema)).required[GeoJSON.MultiLineString]("coordinates", _.coordinates),
       )(GeoJSON.MultiLineString.apply)
     val polygonSchema: Schema[GeoJSON.Polygon] =
       struct(
-        indexedSeq(indexedSeq(coordinatesSchema)).required[GeoJSON.Polygon]("coordinates", _.coordinates),
+        arraySeq(arraySeq(coordinatesSchema)).required[GeoJSON.Polygon]("coordinates", _.coordinates),
       )(GeoJSON.Polygon.apply)
     val multiPolygonSchema: Schema[GeoJSON.MultiPolygon] =
       struct(
-        indexedSeq(indexedSeq(indexedSeq(coordinatesSchema)))
+        arraySeq(arraySeq(arraySeq(coordinatesSchema)))
           .required[GeoJSON.MultiPolygon]("coordinates", _.coordinates),
       )(GeoJSON.MultiPolygon.apply)
     val simpleGeometrySchema: Schema[GeoJSON.SimpleGeometry] =  {
@@ -167,7 +171,7 @@ object Smithy4sJCodecs {
     }
     val geometryCollectionSchema: Schema[GeoJSON.GeometryCollection] =
       struct(
-        indexedSeq(simpleGeometrySchema).required[GeoJSON.GeometryCollection]("geometries", _.geometries),
+        arraySeq(simpleGeometrySchema).required[GeoJSON.GeometryCollection]("geometries", _.geometries),
       )(GeoJSON.GeometryCollection.apply)
     val geometrySchema: Schema[GeoJSON.Geometry] = {
       val pointAlt = pointSchema.oneOf[GeoJSON.Geometry]("Point")
@@ -201,7 +205,7 @@ object Smithy4sJCodecs {
     }
     val featureCollectionSchema: Schema[GeoJSON.FeatureCollection] =
       struct(
-        indexedSeq(simpleGeoJSONSchema).required[GeoJSON.FeatureCollection]("features", _.features),
+        arraySeq(simpleGeoJSONSchema).required[GeoJSON.FeatureCollection]("features", _.features),
         bboxSchema.optional[GeoJSON.FeatureCollection]("bbox", _.bbox)
       )(GeoJSON.FeatureCollection.apply)
     val featureAlt = featureSchema.oneOf[GeoJSON.GeoJSON]("Feature")

@@ -127,7 +127,9 @@ trait ZioJSONEncoderDecoders2 {
         v
       }
     }, ClassTag(classOf[SuitEnum])))
-  implicit val arraySeqOfBooleansD5r: JsonDecoder[ArraySeq[Boolean]] = arraySeqDecoder[Boolean]
+
+  implicit def arraySeqC3c[A: JsonDecoder : JsonEncoder : ClassTag]: JsonCodec[ArraySeq[A]] =
+    new JsonCodec(JsonEncoder.iterable[A, ArraySeq], arraySeqDecoder)
 
   private[this] def arraySeqDecoder[A](implicit decoder: JsonDecoder[A], classTag: ClassTag[A]): JsonDecoder[ArraySeq[A]] =
     (trace: List[JsonError], in: RetractReader) => {

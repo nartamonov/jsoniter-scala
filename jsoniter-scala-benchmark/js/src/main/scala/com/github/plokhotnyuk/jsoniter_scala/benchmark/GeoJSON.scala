@@ -2,7 +2,7 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import com.avsystem.commons.serialization.{flatten, transientDefault}
 import zio.json.jsonDiscriminator
-import scala.collection.immutable.IndexedSeq
+import scala.collection.immutable.ArraySeq
 
 object GeoJSON {
   @flatten("type")
@@ -14,17 +14,17 @@ object GeoJSON {
 
   case class Point(coordinates: (Double, Double)) extends SimpleGeometry
 
-  case class MultiPoint(coordinates: IndexedSeq[(Double, Double)]) extends SimpleGeometry
+  case class MultiPoint(coordinates: ArraySeq[(Double, Double)]) extends SimpleGeometry
 
-  case class LineString(coordinates: IndexedSeq[(Double, Double)]) extends SimpleGeometry
+  case class LineString(coordinates: ArraySeq[(Double, Double)]) extends SimpleGeometry
 
-  case class MultiLineString(coordinates: IndexedSeq[IndexedSeq[(Double, Double)]]) extends SimpleGeometry
+  case class MultiLineString(coordinates: ArraySeq[ArraySeq[(Double, Double)]]) extends SimpleGeometry
 
-  case class Polygon(coordinates: IndexedSeq[IndexedSeq[(Double, Double)]]) extends SimpleGeometry
+  case class Polygon(coordinates: ArraySeq[ArraySeq[(Double, Double)]]) extends SimpleGeometry
 
-  case class MultiPolygon(coordinates: IndexedSeq[IndexedSeq[IndexedSeq[(Double, Double)]]]) extends SimpleGeometry
+  case class MultiPolygon(coordinates: ArraySeq[ArraySeq[ArraySeq[(Double, Double)]]]) extends SimpleGeometry
 
-  case class GeometryCollection(geometries: IndexedSeq[SimpleGeometry]) extends Geometry
+  case class GeometryCollection(geometries: ArraySeq[SimpleGeometry]) extends Geometry
 
   @flatten("type")
   @jsonDiscriminator("type")
@@ -39,6 +39,6 @@ object GeoJSON {
     @transientDefault bbox: Option[(Double, Double, Double, Double)] = None) extends SimpleGeoJSON
 
   case class FeatureCollection(
-    features: IndexedSeq[SimpleGeoJSON],
+    features: ArraySeq[SimpleGeoJSON],
     @transientDefault bbox: Option[(Double, Double, Double, Double)] = None) extends GeoJSON
 }

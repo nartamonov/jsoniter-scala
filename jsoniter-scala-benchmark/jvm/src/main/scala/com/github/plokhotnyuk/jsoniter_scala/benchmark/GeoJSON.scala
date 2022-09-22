@@ -5,7 +5,7 @@ import com.fasterxml.jackson.annotation.JsonSubTypes.Type
 import com.fasterxml.jackson.annotation.{JsonSubTypes, JsonTypeInfo}
 import com.rallyhealth.weepickle.v1.implicits.{discriminator, dropDefault, key}
 import zio.json.jsonDiscriminator
-import scala.collection.immutable.IndexedSeq
+import scala.collection.immutable.ArraySeq
 
 object GeoJSON {
   @discriminator("type")
@@ -30,22 +30,22 @@ object GeoJSON {
   case class Point(coordinates: (Double, Double)) extends SimpleGeometry
 
   @key("MultiPoint")
-  case class MultiPoint(coordinates: IndexedSeq[(Double, Double)]) extends SimpleGeometry
+  case class MultiPoint(coordinates: ArraySeq[(Double, Double)]) extends SimpleGeometry
 
   @key("LineString")
-  case class LineString(coordinates: IndexedSeq[(Double, Double)]) extends SimpleGeometry
+  case class LineString(coordinates: ArraySeq[(Double, Double)]) extends SimpleGeometry
 
   @key("MultiLineString")
-  case class MultiLineString(coordinates: IndexedSeq[IndexedSeq[(Double, Double)]]) extends SimpleGeometry
+  case class MultiLineString(coordinates: ArraySeq[ArraySeq[(Double, Double)]]) extends SimpleGeometry
 
   @key("Polygon")
-  case class Polygon(coordinates: IndexedSeq[IndexedSeq[(Double, Double)]]) extends SimpleGeometry
+  case class Polygon(coordinates: ArraySeq[ArraySeq[(Double, Double)]]) extends SimpleGeometry
 
   @key("MultiPolygon")
-  case class MultiPolygon(coordinates: IndexedSeq[IndexedSeq[IndexedSeq[(Double, Double)]]]) extends SimpleGeometry
+  case class MultiPolygon(coordinates: ArraySeq[ArraySeq[ArraySeq[(Double, Double)]]]) extends SimpleGeometry
 
   @key("GeometryCollection")
-  case class GeometryCollection(geometries: IndexedSeq[SimpleGeometry]) extends Geometry
+  case class GeometryCollection(geometries: ArraySeq[SimpleGeometry]) extends Geometry
 
   @discriminator("type")
   @flatten("type")
@@ -70,6 +70,6 @@ object GeoJSON {
   @key("FeatureCollection")
   @dropDefault
   case class FeatureCollection(
-    features: IndexedSeq[SimpleGeoJSON],
+    features: ArraySeq[SimpleGeoJSON],
     @transientDefault bbox: Option[(Double, Double, Double, Double)] = None) extends GeoJSON
 }
