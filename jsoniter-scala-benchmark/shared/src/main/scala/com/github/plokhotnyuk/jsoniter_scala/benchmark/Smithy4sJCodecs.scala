@@ -130,23 +130,23 @@ object Smithy4sJCodecs {
       )(GeoJSON.Point.apply)
     val multiPointSchema: Schema[GeoJSON.MultiPoint] =
       struct(
-        indexedSeq(coordinatesSchema).required[GeoJSON.MultiPoint]("coordinates", _.coordinates),
+        list(coordinatesSchema).required[GeoJSON.MultiPoint]("coordinates", _.coordinates),
       )(GeoJSON.MultiPoint.apply)
     val lineStringSchema: Schema[GeoJSON.LineString] =
       struct(
-        indexedSeq(coordinatesSchema).required[GeoJSON.LineString]("coordinates", _.coordinates),
+        list(coordinatesSchema).required[GeoJSON.LineString]("coordinates", _.coordinates),
       )(GeoJSON.LineString.apply)
     val multiLineStringSchema: Schema[GeoJSON.MultiLineString] =
       struct(
-        indexedSeq(indexedSeq(coordinatesSchema)).required[GeoJSON.MultiLineString]("coordinates", _.coordinates),
+        list(list(coordinatesSchema)).required[GeoJSON.MultiLineString]("coordinates", _.coordinates),
       )(GeoJSON.MultiLineString.apply)
     val polygonSchema: Schema[GeoJSON.Polygon] =
       struct(
-        indexedSeq(indexedSeq(coordinatesSchema)).required[GeoJSON.Polygon]("coordinates", _.coordinates),
+        list(list(coordinatesSchema)).required[GeoJSON.Polygon]("coordinates", _.coordinates),
       )(GeoJSON.Polygon.apply)
     val multiPolygonSchema: Schema[GeoJSON.MultiPolygon] =
       struct(
-        indexedSeq(indexedSeq(indexedSeq(coordinatesSchema)))
+        list(list(list(coordinatesSchema)))
           .required[GeoJSON.MultiPolygon]("coordinates", _.coordinates),
       )(GeoJSON.MultiPolygon.apply)
     val simpleGeometrySchema: Schema[GeoJSON.SimpleGeometry] =  {
@@ -167,7 +167,7 @@ object Smithy4sJCodecs {
     }
     val geometryCollectionSchema: Schema[GeoJSON.GeometryCollection] =
       struct(
-        indexedSeq(simpleGeometrySchema).required[GeoJSON.GeometryCollection]("geometries", _.geometries),
+        list(simpleGeometrySchema).required[GeoJSON.GeometryCollection]("geometries", _.geometries),
       )(GeoJSON.GeometryCollection.apply)
     val geometrySchema: Schema[GeoJSON.Geometry] = {
       val pointAlt = pointSchema.oneOf[GeoJSON.Geometry]("Point")
@@ -201,7 +201,7 @@ object Smithy4sJCodecs {
     }
     val featureCollectionSchema: Schema[GeoJSON.FeatureCollection] =
       struct(
-        indexedSeq(simpleGeoJSONSchema).required[GeoJSON.FeatureCollection]("features", _.features),
+        list(simpleGeoJSONSchema).required[GeoJSON.FeatureCollection]("features", _.features),
         bboxSchema.optional[GeoJSON.FeatureCollection]("bbox", _.bbox)
       )(GeoJSON.FeatureCollection.apply)
     val featureAlt = featureSchema.oneOf[GeoJSON.GeoJSON]("Feature")
