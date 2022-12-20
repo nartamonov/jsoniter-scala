@@ -1440,20 +1440,20 @@ final class JsonReader private[jsoniter_scala](
         m2 >>>= truncatedBitNum
         e2 += truncatedBitNum
         if (savedBitNum >= 0 && halfwayDiff > 0) {
-          if (m2 == 0x001FFFFFFFFFFFFFL) {
-            m2 = 0x0010000000000000L
-            e2 += 1
-          } else m2 += 1
+          m2 += 1
+          e2 += (m2 >> 53).toInt
         }
         if (e2 == -1074) m2
         else if (e2 >= 972) 0x7FF0000000000000L
         else e2 + 1075L << 52 | m2 & 0x000FFFFFFFFFFFFFL
-      } else {
-        var offset = from
-        if (mark == 0) offset -= newMark
-        java.lang.Double.parseDouble(new String(buf, offset, pos - offset))
-      }
+      } else toDouble(from, newMark, pos)
     }
+
+  private[this] def toDouble(from: Int, newMark: Int, pos: Int): Double = {
+    var offset = from
+    if (mark == 0) offset -= newMark
+    java.lang.Double.parseDouble(new String(buf, offset, pos - offset))
+  }
 
   private[this] def parseFloat(isToken: Boolean): Float = {
     var b =
@@ -1579,20 +1579,20 @@ final class JsonReader private[jsoniter_scala](
         if (savedBitNum > 0) mf = (m2 >>> truncatedBitNum).toInt
         e2 += truncatedBitNum
         if (savedBitNum >= 0 && halfwayDiff > 0) {
-          if (mf == 0x00FFFFFF) {
-            mf = 0x00800000
-            e2 += 1
-          } else mf += 1
+          mf += 1
+          e2 += mf >> 24
         }
         if (e2 == -149) mf
         else if (e2 >= 105) 0x7F800000
         else e2 + 150 << 23 | mf & 0x007FFFFF
-      } else {
-        var offset = from
-        if (mark == 0) offset -= newMark
-        java.lang.Float.parseFloat(new String(buf, offset, pos - offset))
-      }
+      } else toFloat(from, newMark, pos)
     }
+
+  private[this] def toFloat(from: Int, newMark: Int, pos: Int): Float = {
+    var offset = from
+    if (mark == 0) offset -= newMark
+    java.lang.Float.parseFloat(new String(buf, offset, pos - offset))
+  }
 
   // 64-bit unsigned multiplication was adopted from the great Hacker's Delight function
   // (Henry S. Warren, Hacker's Delight, Addison-Wesley, 2nd edition, Fig. 8.2)
